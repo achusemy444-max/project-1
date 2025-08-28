@@ -30,15 +30,21 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y python3-pip python3-setuptools git zip unzip wget
 
-      - name: Install Android commandline tools
+      - name: Install Android commandline tools (root-safe)
         run: |
-          sudo mkdir -p /usr/local/lib/android
-          cd /usr/local/lib/android
-          # Official commandline-tools zip (update URL as Google changes versions)
+          set -e
+          TMPDIR="$(mktemp -d)"
+          cd "$TMPDIR"
+          # Official commandline tools; update the URL when Google bumps the build
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdtools.zip
-          sudo unzip -q -o cmdtools.zip -d cmdline-tools
-          sudo mkdir -p cmdline-tools/latest
-          sudo mv -f cmdline-tools/cmdline-tools/* cmdline-tools/latest/
+          sudo mkdir -p /usr/local/lib/android
+          sudo unzip -q -o cmdtools.zip -d /usr/local/lib/android/cmdline-tools
+          sudo mkdir -p /usr/local/lib/android/cmdline-tools/latest
+          # The zip extracts to cmdline-tools/cmdline-tools/*
+          if [ -d /usr/local/lib/android/cmdline-tools/cmdline-tools ]; then
+            sudo mv -f /usr/local/lib/android/cmdline-tools/cmdline-tools/* /usr/local/lib/android/cmdline-tools/latest/ || true
+            sudo rm -rf /usr/local/lib/android/cmdline-tools/cmdline-tools
+          fi
           echo "ANDROID_SDK_ROOT=/usr/local/lib/android" >> $GITHUB_ENV
           echo "ANDROID_HOME=/usr/local/lib/android" >> $GITHUB_ENV
           echo "/usr/local/lib/android/cmdline-tools/latest/bin" >> $GITHUB_PATH
@@ -49,13 +55,12 @@ jobs:
           ANDROID_SDK_ROOT: /usr/local/lib/android
         run: |
           yes | sdkmanager --licenses
-          # Install stable Build-Tools and platform; avoid preview rc packages
           sdkmanager --install \
             "platform-tools" \
             "platforms;android-33" \
             "build-tools;34.0.0"
           # Verify aidl exists
-          ls -la "$ANDROID_SDK_ROOT/build-tools/34.0.0/aidl"
+          test -x "$ANDROID_SDK_ROOT/build-tools/34.0.0/aidl" && ls -la "$ANDROID_SDK_ROOT/build-tools/34.0.0/aidl"
 
       - name: Install Buildozer and Cython
         run: |
@@ -64,6 +69,8 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Build APK with Buildozer
+        env:
+          ANDROID_SDK_ROOT: /usr/local/lib/android
         run: |
           export PATH=$PATH:$HOME/.local/bin
           buildozer -v android debug
