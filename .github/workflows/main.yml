@@ -2,8 +2,7 @@ name: Android APK
 
 on:
   push:
-    branches: [ "**" ]
-    tags: [ "**" ]
+    branches: [ '**' ]
   pull_request:
 
 jobs:
@@ -11,34 +10,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Mark workspace safe for Git
-        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-
-      - name: Set up Python (host)
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      - name: Upgrade pip and Cython (host)
+      - name: Install system dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install --upgrade cython
+          sudo apt-get update
+          sudo apt-get install -y python3-pip python3-setuptools git zip unzip openjdk-17-jdk wget
 
-      # === Option A (recommended) OR Option B (if wget error persists) ===
-      - name: Build with Buildozer
-        id: buildozer
-        uses: ArtemSBulgakov/buildozer-action@v1
-        with:
-          repository_root: .
-          workdir: .
-          buildozer_version: stable
-          command: buildozer android debug
+      - name: Install Buildozer and Cython
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install --user --upgrade cython virtualenv buildozer
 
-      - name: Upload APK artifact
+      - name: Build APK with Buildozer
+        run: |
+          export PATH=$PATH:~/.local/bin
+          buildozer -v android debug
+
+      # Artifact upload
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: shc-tseminyu-apk
-          path: ${{ steps.buildozer.outputs.filename }}
+          path: bin/*.apk
