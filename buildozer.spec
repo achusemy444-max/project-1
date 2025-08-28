@@ -12,7 +12,7 @@ fullscreen = 0
 # Python deps used by the app
 requirements = python3,kivy==2.3.1,reportlab,pandas
 
-# Android permissions (file save + optional internet)
+# Permissions used by the app (file saving + optional network)
 android.permissions = READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,INTERNET
 
 # Android toolchain targets
@@ -20,16 +20,15 @@ android.api = 33
 android.minapi = 21
 android.ndk = 25b
 android.archs = arm64-v8a,armeabi-v7a
-android.sdk_extra_args = --licenses
 android.bootstrap = sdl2
 
-# Optional: un-comment if Buildozer asks for newer p4a; otherwise leave default
-# p4a.branch = master
+# Accept SDK licenses automatically for CI
+android.accept_sdk_license = True
 
 # Exclude junk
 exclude_patterns = tests,*.pyc,__pycache__/*,*.md,*.spec
 
-# macOS notes (not used by CI build)
+# macOS notes (not used by CI)
 osx.python_version = 3.13
 osx.kivy_version = 2.3.1
 
