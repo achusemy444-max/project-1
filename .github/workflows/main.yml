@@ -40,18 +40,21 @@ jobs:
           BUILDOZER_WARN_ON_ROOT: "0"
         run: |
           set -e
+          # Ensure user-local bin is available (where buildozer was installed)
           export PATH="$PATH:$HOME/.local/bin"
 
-          # Let Buildozer/p4a use their internal SDK/NDK (r25b)
+          # 1) Prevent the runner’s SDK/NDK from leaking into the build
           unset ANDROID_NDK ANDROID_NDK_HOME ANDROID_NDK_ROOT ANDROID_HOME || true
 
-          # Remove stale toolchains to avoid mixed versions
+          # 2) Clean any stale toolchains that may mix versions across runs
           rm -rf "$HOME/.buildozer/android/platform/android-ndk-"* || true
           rm -rf "$HOME/.buildozer/android/platform/build-"* || true
 
-          # Optional visibility
+          # 3) Optional: quickly assert our pins from buildozer.spec for visibility
+          echo "Pinned p4a and NDK settings:"
           grep -iE '^(p4a\.|android\.)' buildozer.spec || true
 
+          # 4) Build
           buildozer -v android debug
 
       - name: Upload APK artifact
