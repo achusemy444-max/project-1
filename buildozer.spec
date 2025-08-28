@@ -9,7 +9,7 @@ version = 0.1.0
 orientation = portrait
 fullscreen = 0
 
-# Keep minimal first; re-add extras after green build
+# Keep initial build lean; add more later (e.g., pandas) once toolchain is green
 requirements = python3,kivy==2.3.1,reportlab
 
 android.permissions = INTERNET,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE
@@ -29,7 +29,7 @@ log_level = 2
 log_level = 2
 warn_on_root = 1
 
-# Pin python-for-android to a known-good branch
+# Pin python-for-android so libffi/autotools integration matches
 p4a.fork = kivy
 p4a.branch = master
 
