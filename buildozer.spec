@@ -1,45 +1,68 @@
 [app]
+# (str) Title of your application
 title = SHC Tseminyu
+
+# (str) Package name
 package.name = shctseminyu
+
+# (str) Package domain (reverse-DNS style)
 package.domain = org.shctseminyu
+
+# (str) Source code directory
 source.dir = .
+
+# (list) Include these file extensions in the APK
 source.include_exts = py,kv,png,jpg,jpeg,txt,json,csv
+
+# (str) Application icon
 icon.filename = %(source.dir)s/icon.png
+
+# (str) Application version
 version = 0.1.0
+
+# (str) Supported orientation (landscape, portrait or all)
 orientation = portrait
+
+# (bool) Fullscreen mode (1=true, 0=false)
 fullscreen = 0
 
-# Python dependencies used by the app
-requirements = python3,kivy==2.3.1,reportlab,pandas
+# (list) Application requirements
+requirements = python3,kivy==2.3.1,reportlab,pandas,pillow
 
-# Android permissions
-android.permissions = READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,INTERNET
+# (list) Permissions your app needs
+android.permissions = INTERNET,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE
 
-# Android toolchain targets
+# (int) Android API to target
 android.api = 33
+
+# (int) Minimum API your app supports
 android.minapi = 21
+
+# (str) Android NDK version
 android.ndk = 25b
+
+# (str) Architectures to build for
 android.archs = arm64-v8a,armeabi-v7a
+
+# (str) Android bootstrap type
 android.bootstrap = sdl2
 
-# Automation convenience for CI
+# Accept Android SDK license during CI pipeline
 android.accept_sdk_license = True
 
-# Exclusions
+# (list) Exclude these patterns from the APK
 exclude_patterns = tests,*.pyc,__pycache__/*,*.md,*.spec
 
-# macOS notes (not used by CI)
-osx.python_version = 3.13
-osx.kivy_version = 2.3.1
-
-# Logging
+# (int) Logging level (0=all, 1=debug, 2=info, 3=warn, 4=error, 5=critical only)
 log_level = 2
+
 
 [buildozer]
 log_level = 2
 warn_on_root = 1
 
 [app:source_patterns]
+# Include important sources explicitly
 +.*/main.py
 +.*/soil_card_generator.py
 +.*/permission_helper.py
