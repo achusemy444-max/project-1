@@ -3,7 +3,7 @@ name: Android APK
 on:
   push:
     branches:
-      - main        # or your default branch name
+      - main
   pull_request:
 
 jobs:
@@ -28,23 +28,31 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-pip python3-setuptools git zip unzip \
-                                  autoconf automake libtool m4 pkg-config
+                                  autoconf automake libtool pkg-config
 
       - name: Install Buildozer toolchain
         run: |
           python3 -m pip install --upgrade pip
-          pip install --user --upgrade cython virtualenv buildozer
+          pip install --user --upgrade cython buildozer
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-      - name: Build APK (uses local .buildozer cache only)
+      - name: Build APK
         env:
           BUILDOZER_WARN_ON_ROOT: "0"
         run: |
           set -e
           export PATH="$PATH:$HOME/.local/bin"
-          # Clean any stale local caches to avoid partial downloads
-          rm -rf "$HOME/.buildozer/.android" || true
-          rm -rf "$HOME/.buildozer/android/platform" || true
+
+          # Prevent leaking runner SDK/NDK into p4a; let Buildozer use android-ndk-r25b
+          unset ANDROID_NDK ANDROID_NDK_HOME ANDROID_NDK_ROOT ANDROID_HOME || true
+
+          # Clean stale toolchains that can mix versions
+          rm -rf "$HOME/.buildozer/android/platform/android-ndk-"* || true
+          rm -rf "$HOME/.buildozer/android/platform/build-"* || true
+
+          # Optional: show p4a pin from spec for debug
+          grep -i '^p4a\.' buildozer.spec || true
+
           buildozer -v android debug
 
       - name: Upload APK artifact
