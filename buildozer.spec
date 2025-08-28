@@ -9,7 +9,7 @@ version = 0.1.0
 orientation = portrait
 fullscreen = 0
 
-# Keep first build minimal; add pandas back after toolchain succeeds
+# Start lean; add pandas back after toolchain succeeds
 requirements = python3,kivy==2.3.1,reportlab
 
 android.permissions = INTERNET,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE
@@ -23,15 +23,13 @@ android.bootstrap = sdl2
 android.accept_sdk_license = True
 
 exclude_patterns = tests,*.pyc,__pycache__/*,*.md,*.spec
-
-# Logging
 log_level = 2
 
 [buildozer]
 log_level = 2
 warn_on_root = 1
 
-# Pin python-for-android so libffi/autotools are in sync
+# Make p4a/libffi/autotools consistent
 p4a.fork = kivy
 p4a.branch = master
 
