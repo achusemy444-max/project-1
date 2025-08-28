@@ -48,16 +48,30 @@ jobs:
           echo "/usr/local/lib/android/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "/usr/local/lib/android/platform-tools" >> $GITHUB_PATH
 
-      - name: Pre-seed Android SDK license (non-interactive)
+      - name: Normalize SDK layout and permissions
         env:
           ANDROID_SDK_ROOT: /usr/local/lib/android
         run: |
-          # Standard Google Android SDK license hash used by CI setups
-          # Source: widely referenced CI recipes; ensures non-interactive installs.
-          sudo mkdir -p "$ANDROID_SDK_ROOT/licenses"
-          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" | sudo tee "$ANDROID_SDK_ROOT/licenses/android-sdk-license" >/dev/null
-          # Also accept preview license just in case
-          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" | sudo tee "$ANDROID_SDK_ROOT/licenses/android-sdk-preview-license" >/dev/null
+          set -e
+          # If a nested .../sdk directory exists, move its contents up one level.
+          if [ -d "$ANDROID_SDK_ROOT/sdk" ]; then
+            echo "Normalizing nested SDK folder..."
+            sudo rsync -a "$ANDROID_SDK_ROOT/sdk/" "$ANDROID_SDK_ROOT/"
+            sudo rm -rf "$ANDROID_SDK_ROOT/sdk"
+          fi
+          # Ensure expected top-level directories exist and are writable
+          sudo mkdir -p "$ANDROID_SDK_ROOT/platforms" "$ANDROID_SDK_ROOT/build-tools" "$ANDROID_SDK_ROOT/platform-tools" "$ANDROID_SDK_ROOT/licenses"
+          # Give write access to the runner user for all SDK content
+          sudo chown -R $USER:$USER "$ANDROID_SDK_ROOT"
+
+      - name: Pre-seed Android SDK licenses (non-interactive)
+        env:
+          ANDROID_SDK_ROOT: /usr/local/lib/android
+        run: |
+          mkdir -p "$ANDROID_SDK_ROOT/licenses"
+          # Common Google Android SDK license hashes
+          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > "$ANDROID_SDK_ROOT/licenses/android-sdk-license"
+          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" > "$ANDROID_SDK_ROOT/licenses/android-sdk-preview-license"
 
       - name: Accept SDK licenses (double pass)
         env:
@@ -75,18 +89,17 @@ jobs:
           pkgtxt="$(mktemp)"
           printf "platform-tools\nplatforms;android-33\nbuild-tools;34.0.0\n" > "$pkgtxt"
           sdkmanager --package_file="$pkgtxt" || true
-          # Retry once more after update and license re-accept
           sdkmanager --update || true
           yes | sdkmanager --licenses || true
           sdkmanager --package_file="$pkgtxt"
-          # Verify installs or fail fast with clear message
-          if [ ! -d "$ANDROID_SDK_ROOT/platforms/android-33" ]; then
-            echo "Platform 33 missing after install" >&2
-            echo "As a fallback, attempting to install platform android-32..." >&2
-            sdkmanager --install "platforms;android-32"
-            test -d "$ANDROID_SDK_ROOT/platforms/android-32" || (echo "Fallback platform 32 also missing" >&2; exit 1)
+          # Verify and fix any inconsistent subfolder remnants again
+          if [ -d "$ANDROID_SDK_ROOT/sdk" ]; then
+            rsync -a "$ANDROID_SDK_ROOT/sdk/" "$ANDROID_SDK_ROOT/"
+            rm -rf "$ANDROID_SDK_ROOT/sdk"
           fi
-          test -x "$ANDROID_SDK_ROOT/build-tools/34.0.0/aidl" || (echo "Build-Tools 34.0.0 missing after install" >&2; exit 1)
+          # Final verification
+          [ -d "$ANDROID_SDK_ROOT/platforms/android-33" ] || (echo "Platform 33 missing after install" >&2; exit 1)
+          [ -x "$ANDROID_SDK_ROOT/build-tools/34.0.0/aidl" ] || (echo "Build-Tools 34.0.0 missing after install" >&2; exit 1)
 
       - name: Install Buildozer and Cython
         run: |
@@ -99,8 +112,6 @@ jobs:
           ANDROID_SDK_ROOT: /usr/local/lib/android
         run: |
           export PATH=$PATH:$HOME/.local/bin
-          # If fallback to android-32 happened, Buildozer will still use api=33 from spec;
-          # you can switch android.api in buildozer.spec to 32 if needed.
           buildozer -v android debug
 
       - name: Upload APK artifact
