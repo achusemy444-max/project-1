@@ -35,12 +35,10 @@ jobs:
           set -e
           TMPDIR="$(mktemp -d)"
           cd "$TMPDIR"
-          # Official commandline tools; update the URL when Google bumps the build
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdtools.zip
           sudo mkdir -p /usr/local/lib/android
           sudo unzip -q -o cmdtools.zip -d /usr/local/lib/android/cmdline-tools
           sudo mkdir -p /usr/local/lib/android/cmdline-tools/latest
-          # The zip extracts to cmdline-tools/cmdline-tools/*
           if [ -d /usr/local/lib/android/cmdline-tools/cmdline-tools ]; then
             sudo mv -f /usr/local/lib/android/cmdline-tools/cmdline-tools/* /usr/local/lib/android/cmdline-tools/latest/ || true
             sudo rm -rf /usr/local/lib/android/cmdline-tools/cmdline-tools
@@ -50,17 +48,27 @@ jobs:
           echo "/usr/local/lib/android/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "/usr/local/lib/android/platform-tools" >> $GITHUB_PATH
 
-      - name: Install SDK packages and accept licenses
+      - name: Accept SDK licenses (non-interactive)
         env:
           ANDROID_SDK_ROOT: /usr/local/lib/android
         run: |
-          yes | sdkmanager --licenses
-          sdkmanager --install \
-            "platform-tools" \
-            "platforms;android-33" \
-            "build-tools;34.0.0"
-          # Verify aidl exists
-          test -x "$ANDROID_SDK_ROOT/build-tools/34.0.0/aidl" && ls -la "$ANDROID_SDK_ROOT/build-tools/34.0.0/aidl"
+          # Run license acceptance multiple times to cover all packages
+          yes | sdkmanager --licenses || true
+          yes | sdkmanager --licenses || true
+
+      - name: Install SDK packages
+        env:
+          ANDROID_SDK_ROOT: /usr/local/lib/android
+        run: |
+          set -e
+          # Update and retry pattern ensures mirrors do not cause failures
+          sdkmanager --update || true
+          yes | sdkmanager --install "platform-tools" || true
+          yes | sdkmanager --install "platforms;android-33" || true
+          yes | sdkmanager --install "build-tools;34.0.0" || true
+          # Verify installations
+          test -d "$ANDROID_SDK_ROOT/platforms/android-33" && ls -la "$ANDROID_SDK_ROOT/platforms/android-33" || (echo "Platform 33 missing" && exit 1)
+          test -x "$ANDROID_SDK_ROOT/build-tools/34.0.0/aidl" && ls -la "$ANDROID_SDK_ROOT/build-tools/34.0.0/aidl" || (echo "Build-Tools 34.0.0 missing" && exit 1)
 
       - name: Install Buildozer and Cython
         run: |
