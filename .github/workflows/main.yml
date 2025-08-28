@@ -2,14 +2,13 @@ name: Android APK
 
 on:
   push:
-    branches: [""]
-    tags: [""]
+    branches:
+      - main        # or your default branch name
   pull_request:
 
 jobs:
   build-android:
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -34,7 +33,7 @@ jobs:
       - name: Install Buildozer toolchain
         run: |
           python3 -m pip install --upgrade pip
-          pip3 install --user --upgrade cython virtualenv buildozer
+          pip install --user --upgrade cython virtualenv buildozer
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Build APK (uses local .buildozer cache only)
