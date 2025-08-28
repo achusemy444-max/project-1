@@ -12,7 +12,6 @@ from kivy.properties import StringProperty
 from kivy.uix.image import Image  # Import Kivy Image widget
 from kivy.core.window import Window
 import os
-import pandas as pd
 
 # Make sure this file exists in the same directory as main.py:
 from soil_card_generator import SoilHealthCardGenerator
@@ -293,8 +292,61 @@ class RootScreen(ScreenManager):
         if self._bg_rect:
             self._bg_rect.source = self.background if self.background else ""
 
+# Android permissions handling
+try:
+    from android.permissions import Permission, request_permissions, check_permission
+    from android.storage import app_storage_path
+    ANDROID = True
+except ImportError:
+    ANDROID = False
+    app_storage_path = None
+
+from kivy.clock import Clock
+
 class SoilHealthCardApp(App):
     def build(self):
+        # For Android: request permissions before showing main UI
+        if ANDROID:
+            self._layout = BoxLayout(orientation='vertical')
+            self._status_label = Label(text='Checking permissions...')
+            self._layout.add_widget(self._status_label)
+            Clock.schedule_once(self.request_android_permissions, 0.5)
+            return self._layout
+        else:
+            return self._build_main_ui()
+
+    def request_android_permissions(self, dt):
+        permissions = [
+            Permission.WRITE_EXTERNAL_STORAGE,
+            Permission.READ_EXTERNAL_STORAGE
+        ]
+        has_permissions = all(check_permission(p) for p in permissions)
+        if not has_permissions:
+            self._status_label.text = 'Requesting storage permissions...'
+            request_permissions(permissions, self.permission_callback)
+        else:
+            self._show_main_ui()
+
+    def permission_callback(self, permissions, grant_results):
+        if all(grant_results):
+            self._status_label.text = 'Permissions granted!'
+            Clock.schedule_once(lambda dt: self._show_main_ui(), 0.5)
+        else:
+            self._status_label.text = 'Permissions denied. App may not function properly.'
+            retry_btn = Button(text='Retry Permission Request', size_hint_y=0.2)
+            retry_btn.bind(on_press=lambda x: self.request_android_permissions(0))
+            self._layout.add_widget(retry_btn)
+
+    def _show_main_ui(self, *args):
+        self._layout.clear_widgets()
+        self._layout.add_widget(Label(text='Starting application...'))
+        Clock.schedule_once(lambda dt: self._replace_with_main_ui(), 0.5)
+
+    def _replace_with_main_ui(self, *args):
+        self._layout.clear_widgets()
+        self._layout.add_widget(self._build_main_ui())
+
+    def _build_main_ui(self):
         Window.size = (800, 800)
         self.generator = SoilHealthCardGenerator()
         self.data = {}
@@ -304,13 +356,14 @@ class SoilHealthCardApp(App):
         self.root = RootScreen()  # Use RootScreen as the root
         self.card_details_screen = CardDetailsScreen(self, name='card')
         self.nutrients_screen = NutrientsScreen(self, name='nutrients')
-        self.bulk_screen = BulkScreen(self, name='bulk')
+        # Remove BulkScreen (CSV/bulk) if not needed
+        # self.bulk_screen = BulkScreen(self, name='bulk')
         self.done_screen = DoneScreen(name='done')
         self.settings_screen = SettingsScreen(app=self, name='settings')  # Pass app instance
 
         self.root.add_widget(self.card_details_screen)
         self.root.add_widget(self.nutrients_screen)
-        self.root.add_widget(self.bulk_screen)
+        # self.root.add_widget(self.bulk_screen)
         self.root.add_widget(self.done_screen)
         self.root.add_widget(self.settings_screen)  # Add settings screen
 
@@ -319,4 +372,8 @@ class SoilHealthCardApp(App):
         return self.root
 
 if __name__ == "__main__":
+    import kivy
+    import sys
+    print(f"Kivy version: {kivy.__version__}")
+    print(f"Python version: {sys.version}")
     SoilHealthCardApp().run()
