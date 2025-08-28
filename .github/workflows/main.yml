@@ -2,8 +2,7 @@ name: Android APK
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
 
 jobs:
@@ -30,7 +29,7 @@ jobs:
           sudo apt-get install -y python3-pip python3-setuptools git zip unzip \
                                   autoconf automake libtool pkg-config
 
-      - name: Install Buildozer toolchain
+      - name: Install Buildozer
         run: |
           python3 -m pip install --upgrade pip
           pip install --user --upgrade cython buildozer
@@ -43,15 +42,15 @@ jobs:
           set -e
           export PATH="$PATH:$HOME/.local/bin"
 
-          # Prevent leaking runner SDK/NDK into p4a; let Buildozer use android-ndk-r25b
+          # Let Buildozer/p4a use their internal SDK/NDK (r25b)
           unset ANDROID_NDK ANDROID_NDK_HOME ANDROID_NDK_ROOT ANDROID_HOME || true
 
-          # Clean stale toolchains that can mix versions
+          # Remove stale toolchains to avoid mixed versions
           rm -rf "$HOME/.buildozer/android/platform/android-ndk-"* || true
           rm -rf "$HOME/.buildozer/android/platform/build-"* || true
 
-          # Optional: show p4a pin from spec for debug
-          grep -i '^p4a\.' buildozer.spec || true
+          # Optional visibility
+          grep -iE '^(p4a\.|android\.)' buildozer.spec || true
 
           buildozer -v android debug
 
