@@ -9,10 +9,10 @@ version = 0.1.0
 orientation = portrait
 fullscreen = 0
 
-# Python deps used by the app
+# Python dependencies used by the app
 requirements = python3,kivy==2.3.1,reportlab,pandas
 
-# Permissions used by the app (file saving + optional network)
+# Android permissions
 android.permissions = READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,INTERNET
 
 # Android toolchain targets
@@ -22,10 +22,10 @@ android.ndk = 25b
 android.archs = arm64-v8a,armeabi-v7a
 android.bootstrap = sdl2
 
-# Accept SDK licenses automatically for CI
+# Automation convenience for CI
 android.accept_sdk_license = True
 
-# Exclude junk
+# Exclusions
 exclude_patterns = tests,*.pyc,__pycache__/*,*.md,*.spec
 
 # macOS notes (not used by CI)
