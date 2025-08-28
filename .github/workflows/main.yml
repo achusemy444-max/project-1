@@ -48,27 +48,31 @@ jobs:
           echo "/usr/local/lib/android/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "/usr/local/lib/android/platform-tools" >> $GITHUB_PATH
 
-      - name: Accept SDK licenses (non-interactive)
+      - name: Accept SDK licenses (two passes)
         env:
           ANDROID_SDK_ROOT: /usr/local/lib/android
+        shell: bash
         run: |
-          # Run license acceptance multiple times to cover all packages
+          set -e
           yes | sdkmanager --licenses || true
           yes | sdkmanager --licenses || true
 
-      - name: Install SDK packages
+      - name: Install SDK packages via package file (with retry)
         env:
           ANDROID_SDK_ROOT: /usr/local/lib/android
+        shell: bash
         run: |
           set -e
-          # Update and retry pattern ensures mirrors do not cause failures
-          sdkmanager --update || true
-          yes | sdkmanager --install "platform-tools" || true
-          yes | sdkmanager --install "platforms;android-33" || true
-          yes | sdkmanager --install "build-tools;34.0.0" || true
-          # Verify installations
-          test -d "$ANDROID_SDK_ROOT/platforms/android-33" && ls -la "$ANDROID_SDK_ROOT/platforms/android-33" || (echo "Platform 33 missing" && exit 1)
-          test -x "$ANDROID_SDK_ROOT/build-tools/34.0.0/aidl" && ls -la "$ANDROID_SDK_ROOT/build-tools/34.0.0/aidl" || (echo "Build-Tools 34.0.0 missing" && exit 1)
+          pkgtxt="$(mktemp)"
+          printf "platform-tools\nplatforms;android-33\nbuild-tools;34.0.0\n" > "$pkgtxt"
+          # First attempt
+          sdkmanager --package_file="$pkgtxt" || true
+          # Re-accept any new licenses, then retry
+          yes | sdkmanager --licenses || true
+          sdkmanager --package_file="$pkgtxt"
+          # Verify installs
+          test -d "$ANDROID_SDK_ROOT/platforms/android-33" || (echo "Platform 33 missing after install" && exit 1)
+          test -x "$ANDROID_SDK_ROOT/build-tools/34.0.0/aidl" || (echo "Build-Tools 34.0.0 missing after install" && exit 1)
 
       - name: Install Buildozer and Cython
         run: |
