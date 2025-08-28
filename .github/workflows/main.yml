@@ -1,3 +1,17 @@
+ame: Android APK
+on:
+push:
+branches: [""]
+tags: [""]
+pull_request:
+jobs:
+build-android:
+runs-on: ubuntu-latest
+steps:
+- name: Checkout repository
+uses: actions/checkout@v4
+
+text
   - name: Set up Python
     uses: actions/setup-python@v5
     with:
