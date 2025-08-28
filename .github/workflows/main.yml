@@ -9,7 +9,7 @@ on:
 jobs:
   build-android:
     name: Build Kivy APK with Buildozer
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest  # <- updated from ubuntu-20.04
 
     steps:
       - name: Checkout repository
