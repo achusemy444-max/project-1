@@ -115,3 +115,4 @@ jobs:
       name: shc-tseminyu-apk
       path: bin/*.apk
 
+
