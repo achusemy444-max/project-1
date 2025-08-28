@@ -9,31 +9,27 @@ version = 0.1.0
 orientation = portrait
 fullscreen = 0
 
-# Entry point requirements
+# Python deps used by the app
 requirements = python3,kivy==2.3.1,reportlab,pandas
-# If builds are slow or fail due to pandas, remove pandas if not needed in production. [12]
 
-# Permissions needed by the app (file saving, internet future-proofing)
+# Android permissions (file save + optional internet)
 android.permissions = READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,INTERNET
-# Runtime permission requests are already in main.py. Declaring here exposes them to Android. [7][11]
 
-# Android target and toolchains
+# Android toolchain targets
 android.api = 33
 android.minapi = 21
 android.ndk = 25b
 android.archs = arm64-v8a,armeabi-v7a
 android.sdk_extra_args = --licenses
 android.bootstrap = sdl2
-# Use default Java from the image; p4a handles toolchain on CI. [17][18]
 
-# Package build behavior
-# Use master only if you hit AAB/SDK warnings; otherwise omit to use buildozer default p4a version. [18]
+# Optional: un-comment if Buildozer asks for newer p4a; otherwise leave default
 # p4a.branch = master
 
-# Files to exclude
+# Exclude junk
 exclude_patterns = tests,*.pyc,__pycache__/*,*.md,*.spec
 
-# iOS/macOS notes (not used on CI but set per request)
+# macOS notes (not used by CI build)
 osx.python_version = 3.13
 osx.kivy_version = 2.3.1
 
