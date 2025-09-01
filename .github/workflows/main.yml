@@ -96,12 +96,22 @@ jobs:
             pkg-config \
             gettext \
             intltool \
+            autopoint \
             libncurses5-dev \
             libncursesw5-dev \
             libtinfo5 \
             cmake \
             libffi-dev \
             libssl-dev
+
+      - name: Verify autotools / gettext tools
+        run: |
+          echo "autopoint -> $(which autopoint || echo 'NOT FOUND')"
+          echo "autopoint file listing:"
+          ls -la /usr/bin/autopoint* || true
+          echo "autoreconf -> $(which autoreconf || echo 'NOT FOUND')"
+          autoreconf --version || true
+          
       - name: Setup Java 17 required by Gradle
         uses: actions/setup-java@v4
         with:
