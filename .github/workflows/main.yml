@@ -13,7 +13,6 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 180
     env:
-      # Use runner $HOME (shell will expand) instead of the invalid runner.home expression
       ANDROIDSDK_ROOT: $HOME/.buildozer/android/platform/android-sdk
       ANDROID_NDK_HOME: $HOME/.buildozer/android/platform/android-ndk-r25b
 
@@ -30,32 +29,35 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
-          key: buildozer-global-${{ runner.os }}-${{ steps.get-date.outputs.date }}-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-global-${{ runner.os }}-${{ env.date }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
             buildozer-global-${{ runner.os }}-
+
       - name: Cache Buildozer directory in app
         uses: actions/cache@v4
         with:
-          path: .buildozer
+          path: ./.buildozer
           key: ${{ runner.os }}-buildozer-${{ github.run_id }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
             ${{ runner.os }}-buildozer-
+
       - name: Cache Android SDK
         uses: actions/cache@v4
         with:
           path: ~/.buildozer/android/platform/android-sdk
-          key: ${{ runner.os }}-android-sdk-${{ steps.get-date.outputs.date }}
+          key: ${{ runner.os }}-android-sdk-${{ env.date }}
           restore-keys: |
             ${{ runner.os }}-android-sdk-
+
       - name: Cache Android NDK
         uses: actions/cache@v4
         with:
           path: ~/.buildozer/android/platform/android-ndk-r25b
-          key: ${{ runner.os }}-android-ndk-${{ steps.get-date.outputs.date }}
+          key: ${{ runner.os }}-android-ndk-${{ env.date }}
           restore-keys: |
             ${{ runner.os }}-android-ndk-
 
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -71,34 +73,35 @@ jobs:
             libavformat-dev \
             libavcodec-dev \
             libunwind-dev \
-            zlib1g-dev
-          sudo apt-get install -y \
+            zlib1g-dev \
             libsqlite3-dev \
             sqlite3 \
             bzip2 \
             libbz2-dev \
-            zlib1g-dev \
             openssl \
             libgdbm-dev \
             libgdbm-compat-dev \
             liblzma-dev \
             libreadline-dev \
             uuid-dev \
-            libgstreamer1.0 \
+            libgstreamer1.0-0 \
             gstreamer1.0-plugins-base \
-            gstreamer1.0-plugins-good
-+          # Required for autoreconf / python-for-android native builds
-+          sudo apt-get install -y gettext autoconf automake libtool pkg-config
-          sudo apt-get install -y \
+            gstreamer1.0-plugins-good \
             zip \
             unzip \
             autoconf \
+            automake \
             libtool \
+            libtool-bin \
             pkg-config \
+            gettext \
+            intltool \
             libncurses5-dev \
             libncursesw5-dev \
             libtinfo5 \
-
+            cmake \
+            libffi-dev \
+            libssl-dev
       - name: Setup Java 17 required by Gradle
         uses: actions/setup-java@v4
         with:
@@ -143,4 +146,4 @@ jobs:
           path: |
             bin/*.apk
             bin/*.aab
-          retention-days: 3
+          retention-days:
