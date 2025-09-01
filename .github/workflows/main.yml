@@ -14,6 +14,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
+    # increase job timeout because Android builds can take long
+    timeout-minutes: 180
+    env:
+      # recommended buildozer locations; buildozer will populate these
+      ANDROIDSDK_ROOT: ${{ runner.home }}/.buildozer/android/platform/android-sdk
+      ANDROID_NDK_HOME: ${{ runner.home }}/.buildozer/android/platform/android-ndk-r25b
 
     steps:
       - uses: actions/checkout@v4
@@ -99,6 +105,8 @@ jobs:
             libffi-dev \
             libssl-dev \
             automake
+            # ensure unzip/zip are present
+            sudo apt-get install -y zip unzip
       # Set up Java 17 required by Gradle
       - name: Setup Java 17 required by Gradle
         uses: actions/setup-java@v4
@@ -115,12 +123,31 @@ jobs:
       # Install pip dependencies
       - name: Install pip dependencies
         run: |
-          pip install --upgrade pip
-          pip install buildozer cython==0.29.33 git+https://github.com/kivy/plyer.git
+          python -m pip install --upgrade pip setuptools wheel
+          # use a pinned Cython known to work with python-for-android
+          python -m pip install cython==0.29.33
+          python -m pip install buildozer
+          # optional useful packages used by Kivy apps
+          python -m pip install git+https://github.com/kivy/plyer.git
+
+      - name: Create swap (avoid OOM during native builds)
+        run: |
+          sudo fallocate -l 4G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=4096
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          sudo bash -c "echo '/swapfile none swap sw 0 0' >> /etc/fstab"
+
+      - name: Show buildozer & system info
+        run: |
+          buildozer --version || true
+          uname -a
+          java -version || true
       # Build with Buildozer
       - name: Build with Buildozer
         id: buildozer
         run: |
+          # Non-interactive build; pipe yes to accept any prompts
           yes | buildozer -v android debug
         # yes | buildozer -v android release
         # run this for generating aab (Android App Bundle) [Required by google play]
