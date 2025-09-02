@@ -19,7 +19,7 @@ version = 0.1
 
 # (list) Application requirements
 # Adjust requirements to suit your project. KivyMD is pulled from GitHub archive.
-requirements = python3,kivy==2.3.1,https://github.com/kivymd/KivyMD/archive/master.zip,pillow,reportlab,pandas,plyer
+requirements = python3,kivy==2.3.1,https://github.com/kivymd/KivyMD/archive/master.zip,pillow
 
 # (str) Presplash and icon
 presplash.filename = %(source.dir)s/picture.png
