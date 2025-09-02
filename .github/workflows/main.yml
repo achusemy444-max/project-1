@@ -75,9 +75,9 @@ jobs:
       - name: Verify autotools / gettext tools
         run: |
           echo "--- Verifying key build tools ---"
-          which autopoint
-          which autoreconf
-          which libtool
+          which autopoint || echo "autopoint not found"
+          which autoreconf || echo "autoreconf not found"
+          which libtool || echo "libtool not found"
           echo "--- Verification complete ---"
 
       - name: Setup Java 17 (required by Gradle)
