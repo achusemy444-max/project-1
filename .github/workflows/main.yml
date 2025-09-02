@@ -17,64 +17,73 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get date
-        run: echo "date=$(date -u '+%Y%m%d')" >> $GITHUB_ENV
-        shell: bash
-
-      - name: Cache ~/.buildozer
+      - name: Cache Buildozer artifacts
         uses: actions/cache@v4
         with:
-          path: ~/.buildozer
-          key: buildozer-global-${{ runner.os }}-${{ github.run_id }}-${{ hashFiles('buildozer.spec') }}
+          path: |
+            ~/.buildozer
+            ./.buildozer
+          key: buildozer-cache-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
-            buildozer-global-${{ runner.os }}-
-
-      - name: Cache ./.buildozer
-        uses: actions/cache@v4
-        with:
-          path: ./.buildozer
-          key: ${{ runner.os }}-buildozer-${{ github.run_id }}-${{ hashFiles('buildozer.spec') }}
-          restore-keys: |
-            ${{ runner.os }}-buildozer-
-
-      - name: Cache Android SDK
-        uses: actions/cache@v4
-        with:
-          path: ~/.buildozer/android/platform/android-sdk
-          key: ${{ runner.os }}-android-sdk-${{ hashFiles('buildozer.spec') }}
-          restore-keys: |
-            ${{ runner.os }}-android-sdk-
-
-      - name: Cache Android NDK
-        uses: actions/cache@v4
-        with:
-          path: ~/.buildozer/android/platform/android-ndk-r25b
-          key: ${{ runner.os }}-android-ndk-${{ hashFiles('buildozer.spec') }}
-          restore-keys: |
-            ${{ runner.os }}-android-ndk-
+            buildozer-cache-${{ runner.os }}-
 
       - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            build-essential git ffmpeg \
-            libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
-            libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev libunwind-dev \
-            zlib1g-dev libsqlite3-dev sqlite3 bzip2 libbz2-dev openssl \
-            libgdbm-dev libgdbm-compat-dev liblzma-dev libreadline-dev uuid-dev \
-            libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev \
-            zip unzip pkg-config \
-            autoconf automake libtool libtool-bin gettext intltool \
-            gstreamer1.0-plugins-base gstreamer1.0-plugins-good
+            build-essential \
+            git \
+            ffmpeg \
+            libsdl2-dev \
+            libsdl2-image-dev \
+            libsdl2-mixer-dev \
+            libsdl2-ttf-dev \
+            libportmidi-dev \
+            libswscale-dev \
+            libavformat-dev \
+            libavcodec-dev \
+            libunwind-dev \
+            zlib1g-dev \
+            libsqlite3-dev \
+            sqlite3 \
+            bzip2 \
+            libbz2-dev \
+            openssl \
+            libgdbm-dev \
+            libgdbm-compat-dev \
+            liblzma-dev \
+            libreadline-dev \
+            uuid-dev \
+            libncurses5-dev \
+            libncursesw5-dev \
+            libtinfo5 \
+            cmake \
+            libffi-dev \
+            libssl-dev \
+            zip \
+            unzip \
+            pkg-config \
+            autoconf \
+            automake \
+            libtool \
+            libtool-bin \
+            gettext \
+            intltool \
+            gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-good
+
       - name: Verify autotools / gettext tools
         run: |
-          echo "which autopoint: $(which autopoint || echo NOT_FOUND)"
-          echo "autoreconf: $(autoreconf --version || true)"
+          echo "--- Verifying key build tools ---"
+          which autopoint
+          which autoreconf
+          which libtool
+          echo "--- Verification complete ---"
 
       - name: Setup Java 17 (required by Gradle)
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: 'temurin'
           java-version: '17'
 
       - name: Setup Python 3.11
@@ -86,8 +95,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install cython==0.29.33 buildozer
-          # optional: install plyer if your app uses it
-          python -m pip install git+https://github.com/kivy/plyer.git || true
+          python -m pip install git+https://github.com/kivy/plyer.git
 
       - name: Create swap (avoid OOM during native builds)
         run: |
@@ -95,6 +103,7 @@ jobs:
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
           sudo swapon /swapfile
+          sudo bash -c "echo '/swapfile none swap sw 0 0' >> /etc/fstab"
 
       - name: Show buildozer & system info
         run: |
@@ -105,7 +114,6 @@ jobs:
       - name: Build with Buildozer (debug)
         id: buildozer
         run: |
-          # Adjust buildozer target (debug / release) as needed
           yes | buildozer -v android debug
 
       - name: Upload APK / AAB
