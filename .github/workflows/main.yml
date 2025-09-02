@@ -57,7 +57,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-android-ndk-
 
-      - name: Install system dependencies
+            - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -95,8 +95,8 @@ jobs:
             libtool-bin \
             pkg-config \
             gettext \
-            intltool \
             autopoint \
+            intltool \
             libncurses5-dev \
             libncursesw5-dev \
             libtinfo5 \
