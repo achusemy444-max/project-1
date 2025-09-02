@@ -158,23 +158,44 @@ class NutrientsScreen(Screen):
             farmer_name = self.app.data.get('farmer_name', '').strip() or 'user'
             safe_name = "".join(c for c in farmer_name if c.isalnum() or c in (' ', '_', '-')).rstrip()
             filename = f"soil_card_{safe_name}.pdf"
-            documents_dir = os.path.join(os.path.expanduser("~"), "Documents")
+
+            # Use a safe, public directory on Android
+            if ANDROID:
+                documents_dir = storagepath.get_documents_dir()
+                if documents_dir is None: # Fallback to primary external storage
+                    documents_dir = storagepath.get_external_storage_dir()
+            else:
+                documents_dir = os.path.join(os.path.expanduser("~"), "Documents")
+
             if not os.path.exists(documents_dir):
-                documents_dir = os.path.expanduser("~")
+                os.makedirs(documents_dir)
+
             filepath = os.path.join(documents_dir, filename)
             self.app.generator.create_pdf_card(filepath, self.app.data, self.app.nutrients, self.app.remarks)
-            # Attempt to open the generated PDF automatically (platform-aware)
-            try:
+
+            # On Android, use a share intent to open the file
+            if ANDROID:
+                share_intent = Intent(Intent.ACTION_VIEW)
+                # Use FileProvider to get a content URI, required for API 24+
+                try:
+                    context = PythonActivity.mActivity.getApplicationContext()
+                    file_provider_auth = f"{context.getPackageName()}.fileprovider"
+                    uri = autoclass('androidx.core.content.FileProvider').getUriForFile(context, file_provider_auth, File(filepath))
+                except Exception: # Fallback for older APIs or different setups
+                    uri = Uri.fromFile(File(filepath))
+
+                share_intent.setDataAndType(uri, "application/pdf")
+                share_intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                share_intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                current_activity = PythonActivity.mActivity
+                current_activity.startActivity(share_intent)
+            else: # Desktop fallback
                 if hasattr(os, 'startfile'):
-                    # Windows
                     os.startfile(filepath)
                 else:
-                    # macOS / Linux
                     opener = 'open' if sys.platform == 'darwin' else 'xdg-open'
                     subprocess.Popen([opener, filepath])
-            except Exception:
-                # ignore open errors; user will still see the file path
-                pass
+
             self.app.done_screen.set_message(f"PDF generated:\n{filepath}")
             self.app.sm.current = 'done'
         except Exception as e:
@@ -347,14 +368,21 @@ class RootScreen(ScreenManager):
             self._bg_rect.source = self.background if self.background else ""
 
 
-# Android permissions handling (optional)
+# Android permissions handling
 try:
     from android.permissions import Permission, request_permissions, check_permission
-    from android.storage import app_storage_path
+    # Use plyer to get storage paths and share files
+    from plyer import storagepath
+    from plyer.platforms.android import activity
+    from jnius import autoclass
     ANDROID = True
+    # Define Android classes for sharing
+    PythonActivity = autoclass('org.kivy.android.PythonActivity')
+    Intent = autoclass('android.content.Intent')
+    Uri = autoclass('android.net.Uri')
+    File = autoclass('java.io.File')
 except Exception:
     ANDROID = False
-    app_storage_path = None
 
 from kivy.clock import Clock
 
