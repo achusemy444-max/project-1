@@ -2,11 +2,9 @@ name: Android Build
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   build:
@@ -19,21 +17,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get Date
-        id: get-date
-        run: |
-          echo "date=$(date -u '+%Y%m%d')" >> $GITHUB_ENV
+      - name: Get date
+        run: echo "date=$(date -u '+%Y%m%d')" >> $GITHUB_ENV
         shell: bash
 
-      - name: Cache Buildozer global directory
+      - name: Cache ~/.buildozer
         uses: actions/cache@v4
         with:
           path: ~/.buildozer
-          key: buildozer-global-${{ runner.os }}-${{ env.date }}-${{ hashFiles('buildozer.spec') }}
+          key: buildozer-global-${{ runner.os }}-${{ github.run_id }}-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
             buildozer-global-${{ runner.os }}-
 
-      - name: Cache Buildozer directory in app
+      - name: Cache ./.buildozer
         uses: actions/cache@v4
         with:
           path: ./.buildozer
@@ -45,7 +41,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.buildozer/android/platform/android-sdk
-          key: ${{ runner.os }}-android-sdk-${{ env.date }}
+          key: ${{ runner.os }}-android-sdk-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
             ${{ runner.os }}-android-sdk-
 
@@ -53,82 +49,45 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.buildozer/android/platform/android-ndk-r25b
-          key: ${{ runner.os }}-android-ndk-${{ env.date }}
+          key: ${{ runner.os }}-android-ndk-${{ hashFiles('buildozer.spec') }}
           restore-keys: |
             ${{ runner.os }}-android-ndk-
 
-            - name: Install system dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            git \
-            ffmpeg \
-            libsdl2-dev \
-            libsdl2-image-dev \
-            libsdl2-mixer-dev \
-            libsdl2-ttf-dev \
-            libportmidi-dev \
-            libswscale-dev \
-            libavformat-dev \
-            libavcodec-dev \
-            libunwind-dev \
-            zlib1g-dev \
-            libsqlite3-dev \
-            sqlite3 \
-            bzip2 \
-            libbz2-dev \
-            openssl \
-            libgdbm-dev \
-            libgdbm-compat-dev \
-            liblzma-dev \
-            libreadline-dev \
-            uuid-dev \
-            libgstreamer1.0-0 \
-            gstreamer1.0-plugins-base \
-            gstreamer1.0-plugins-good \
-            zip \
-            unzip \
-            autoconf \
-            automake \
-            libtool \
-            libtool-bin \
-            pkg-config \
-            gettext \
-            autopoint \
-            intltool \
-            libncurses5-dev \
-            libncursesw5-dev \
-            libtinfo5 \
-            cmake \
-            libffi-dev \
-            libssl-dev
-
+          sudo apt-get install -y --no-install-recommends \
+            build-essential git ffmpeg \
+            libsdl2-dev libsdl2-image-dev libsdl2-mixer-dev libsdl2-ttf-dev \
+            libportmidi-dev libswscale-dev libavformat-dev libavcodec-dev libunwind-dev \
+            zlib1g-dev libsqlite3-dev sqlite3 bzip2 libbz2-dev openssl \
+            libgdbm-dev libgdbm-compat-dev liblzma-dev libreadline-dev uuid-dev \
+            libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev \
+            zip unzip pkg-config \
+            autoconf automake libtool libtool-bin gettext intltool \
+            gstreamer1.0-plugins-base gstreamer1.0-plugins-good
       - name: Verify autotools / gettext tools
         run: |
-          echo "autopoint -> $(which autopoint || echo 'NOT FOUND')"
-          echo "autopoint file listing:"
-          ls -la /usr/bin/autopoint* || true
-          echo "autoreconf -> $(which autoreconf || echo 'NOT FOUND')"
-          autoreconf --version || true
-          
-      - name: Setup Java 17 required by Gradle
+          echo "which autopoint: $(which autopoint || echo NOT_FOUND)"
+          echo "autoreconf: $(autoreconf --version || true)"
+
+      - name: Setup Java 17 (required by Gradle)
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '17'
 
-      - name: Set up Python
+      - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install pip dependencies
+      - name: Install pip tools
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          python -m pip install cython==0.29.33
-          python -m pip install buildozer
-          python -m pip install git+https://github.com/kivy/plyer.git
+          python -m pip install cython==0.29.33 buildozer
+          # optional: install plyer if your app uses it
+          python -m pip install git+https://github.com/kivy/plyer.git || true
 
       - name: Create swap (avoid OOM during native builds)
         run: |
@@ -136,7 +95,6 @@ jobs:
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
           sudo swapon /swapfile
-          sudo bash -c "echo '/swapfile none swap sw 0 0' >> /etc/fstab"
 
       - name: Show buildozer & system info
         run: |
@@ -144,16 +102,17 @@ jobs:
           uname -a
           java -version || true
 
-      - name: Build with Buildozer
+      - name: Build with Buildozer (debug)
         id: buildozer
         run: |
+          # Adjust buildozer target (debug / release) as needed
           yes | buildozer -v android debug
 
-      - name: Upload APK artifact
+      - name: Upload APK / AAB
         uses: actions/upload-artifact@v4
         with:
-          name: package
+          name: android-package
           path: |
             bin/*.apk
             bin/*.aab
-          retention-days:
+          retention-days: 3
