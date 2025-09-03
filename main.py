@@ -175,20 +175,23 @@ class NutrientsScreen(Screen):
 
             # On Android, use a share intent to open the file
             if ANDROID:
-                share_intent = Intent(Intent.ACTION_VIEW)
-                # Use FileProvider to get a content URI, required for API 24+
                 try:
-                    context = PythonActivity.mActivity.getApplicationContext()
+                    # Use FileProvider to get a content URI, required for API 24+
+                    context = cast('android.content.Context', PythonActivity.mActivity.getApplicationContext())
                     file_provider_auth = f"{context.getPackageName()}.fileprovider"
-                    uri = autoclass('androidx.core.content.FileProvider').getUriForFile(context, file_provider_auth, File(filepath))
-                except Exception: # Fallback for older APIs or different setups
-                    uri = Uri.fromFile(File(filepath))
-
-                share_intent.setDataAndType(uri, "application/pdf")
-                share_intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                share_intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                current_activity = PythonActivity.mActivity
-                current_activity.startActivity(share_intent)
+                    uri = FileProvider.getUriForFile(context, file_provider_auth, File(filepath))
+                    
+                    share_intent = Intent(Intent.ACTION_VIEW)
+                    share_intent.setDataAndType(uri, "application/pdf")
+                    share_intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    share_intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    
+                    current_activity = cast('android.app.Activity', PythonActivity.mActivity)
+                    current_activity.startActivity(share_intent)
+                except Exception as e_intent:
+                    # Fallback for older APIs or different setups
+                    dlg = MDDialog(title="Android Error", text=f"Could not open PDF automatically. Please find it in your Documents folder.\nError: {e_intent}")
+                    dlg.open()
             else: # Desktop fallback
                 if hasattr(os, 'startfile'):
                     os.startfile(filepath)
@@ -374,13 +377,16 @@ try:
     # Use plyer to get storage paths and share files
     from plyer import storagepath
     from plyer.platforms.android import activity
-    from jnius import autoclass
+    from jnius import autoclass, cast
     ANDROID = True
     # Define Android classes for sharing
     PythonActivity = autoclass('org.kivy.android.PythonActivity')
     Intent = autoclass('android.content.Intent')
     Uri = autoclass('android.net.Uri')
     File = autoclass('java.io.File')
+    # For FileProvider
+    Context = autoclass('android.content.Context')
+    FileProvider = autoclass('androidx.core.content.FileProvider')
 except Exception:
     ANDROID = False
 
