@@ -111,14 +111,15 @@ jobs:
         run: |
           rm -rf ~/.buildozer
           rm -rf ./.buildozer
-          buildozer android clean \
-            --local-recipes=./python-for-android/pythonforandroid/recipes
+
+      - name: Clone python-for-android again
+        run: git clone https://github.com/kivy/python-for-android python-for-android
 
       - name: Build with Buildozer (debug)
-        id: buildozer
         run: |
           yes | buildozer -v android debug \
             --local-recipes=./python-for-android/pythonforandroid/recipes
+
 
       - name: Upload APK / AAB
         uses: actions/upload-artifact@v4
