@@ -17,9 +17,8 @@ source.include_exts = py,png,jpg,kv,atlas,ttf,otf
 # (str) Application versioning
 version = 0.1
 
-# (list) Application requirements
-# Adjust requirements to suit your project. KivyMD is pulled from GitHub archive.
-requirements = python3,kivy==2.3.1,https://github.com/kivymd/KivyMD/archive/master.zip,pillow,fpdf,pandas,plyer
+# (list) Application requirements - REMOVED pandas and reportlab completely
+requirements = python3,kivy==2.3.1,https://github.com/kivymd/KivyMD/archive/master.zip,pillow,fpdf2,plyer
 
 # (str) Presplash and icon
 presplash.filename = %(source.dir)s/picture.png
@@ -28,7 +27,7 @@ icon.filename = %(source.dir)s/icon.png
 # (list) Supported orientations
 orientation = portrait
 
-# (list) Permissions required by the app (add more as needed)
+# (list) Permissions required by the app
 android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
 
 # (int) Target Android API
@@ -45,10 +44,7 @@ android.debug_artifact = apk
 
 # p4a / buildozer tuning
 p4a.branch = master
-# p4a.bootstrap = sdl2   # default
 android.enable_androidx = True
-# Pointing Buildozer to the patched Python-for-Android recipes
-p4a.local_recipes = ./python-for-android/pythonforandroid/recipes
 
 [buildozer]
 log_level = 2

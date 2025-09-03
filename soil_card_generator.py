@@ -1,11 +1,11 @@
 from fpdf import FPDF
 from datetime import datetime
 import os
-import pandas as pd
+import csv
 
 class SoilHealthCardGenerator:
     def __init__(self):
-        # 12 nutrients with ranges and units (same as before)
+        # 12 nutrients with ranges and units
         self.nutrient_ranges = {
             'nitrogen': {'low': 280, 'medium': 560, 'unit': 'kg/ha'},
             'phosphorus': {'low': 10, 'medium': 25, 'unit': 'kg/ha'},
@@ -36,69 +36,56 @@ class SoilHealthCardGenerator:
         except (ValueError, KeyError):
             return 'NOT AVAILABLE'
 
-    def get_status_color(self, status):
-        # Return RGB values instead of reportlab color objects
-        if 'LOW' in status:
-            return (255, 0, 0)  # Red
-        elif 'HIGH' in status:
-            return (0, 128, 0)  # Green
-        elif 'MEDIUM' in status:
-            return (255, 165, 0)  # Orange
-        else:
-            return (128, 128, 128)  # Grey
-
     def create_pdf_card(self, file_path, data, nutrients, custom_remarks=""):
         pdf = FPDF()
         pdf.add_page()
-        pdf.set_font("Arial", size=12)
-
+        
         # Title
         pdf.set_font("Arial", 'B', 18)
-        pdf.cell(200, 10, txt="SOIL HEALTH CARD", ln=True, align='C')
+        pdf.cell(0, 10, "SOIL HEALTH CARD", 0, 1, 'C')
         pdf.ln(5)
         
-        pdf.set_font("Arial", size=14)
-        pdf.cell(200, 10, txt="Soil & Water Department SDO Office, Tseminyu, Nagaland", ln=True, align='C')
+        pdf.set_font("Arial", size=12)
+        pdf.cell(0, 8, "Soil & Water Department SDO Office, Tseminyu, Nagaland", 0, 1, 'C')
         pdf.ln(10)
 
         # Header Information
-        pdf.set_font("Arial", 'B', 12)
-        pdf.cell(95, 8, txt=f"Center Name: {data.get('center_name', '')}", ln=False)
-        pdf.cell(95, 8, txt=f"Test ID: {data.get('test_id', '')}", ln=True)
-        pdf.cell(95, 8, txt=f"Address: {data.get('address', '')}", ln=False)
-        pdf.cell(95, 8, txt=f"Testing Date: {data.get('testing_date', '')}", ln=True)
+        pdf.set_font("Arial", size=10)
+        pdf.cell(95, 6, f"Center Name: {data.get('center_name', '')}", 0, 0)
+        pdf.cell(95, 6, f"Test ID: {data.get('test_id', '')}", 0, 1)
+        pdf.cell(95, 6, f"Address: {data.get('address', '')}", 0, 0)
+        pdf.cell(95, 6, f"Testing Date: {data.get('testing_date', '')}", 0, 1)
         pdf.ln(10)
 
-        # Card Details
+        # Farmer Details
         pdf.set_font("Arial", 'B', 12)
-        pdf.cell(200, 8, txt="CARD ISSUED TO", ln=True)
+        pdf.cell(0, 8, "CARD ISSUED TO", 0, 1)
         pdf.set_font("Arial", size=10)
-        pdf.cell(200, 6, txt=f"Name: {data.get('farmer_name', '')}", ln=True)
-        pdf.cell(200, 6, txt=f"Address: {data.get('farmer_address', '')}", ln=True)
+        pdf.cell(0, 6, f"Name: {data.get('farmer_name', '')}", 0, 1)
+        pdf.cell(0, 6, f"Address: {data.get('farmer_address', '')}", 0, 1)
         pdf.ln(5)
 
         pdf.set_font("Arial", 'B', 12)
-        pdf.cell(200, 8, txt="SAMPLE INFORMATION", ln=True)
+        pdf.cell(0, 8, "SAMPLE INFORMATION", 0, 1)
         pdf.set_font("Arial", size=10)
-        pdf.cell(200, 6, txt=f"Survey No.: {data.get('survey_no', '')}", ln=True)
-        pdf.cell(200, 6, txt=f"Selected Crop: {data.get('selected_crop', 'N/A')}", ln=True)
+        pdf.cell(0, 6, f"Survey No.: {data.get('survey_no', '')}", 0, 1)
+        pdf.cell(0, 6, f"Selected Crop: {data.get('selected_crop', 'N/A')}", 0, 1)
         pdf.ln(10)
 
-        # Nutrient Table
-        pdf.set_font("Arial", 'B', 14)
-        pdf.cell(200, 10, txt="SOIL SAMPLE DETAILS", ln=True)
-        pdf.ln(5)
+        # Nutrient Table Header
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(0, 8, "SOIL SAMPLE DETAILS", 0, 1)
+        pdf.ln(3)
 
         # Table headers
-        pdf.set_font("Arial", 'B', 10)
-        pdf.cell(50, 8, txt="Nutrient", border=1, align='C')
-        pdf.cell(30, 8, txt="Value", border=1, align='C')
-        pdf.cell(60, 8, txt="Range (L-M-H)", border=1, align='C')
-        pdf.cell(40, 8, txt="Status", border=1, align='C')
-        pdf.ln()
+        pdf.set_font("Arial", 'B', 9)
+        pdf.cell(45, 8, "Nutrient", 1, 0, 'C')
+        pdf.cell(25, 8, "Value", 1, 0, 'C')
+        pdf.cell(55, 8, "Range (L-M-H)", 1, 0, 'C')
+        pdf.cell(35, 8, "Status", 1, 1, 'C')
 
         # Nutrient data
-        pdf.set_font("Arial", size=9)
+        pdf.set_font("Arial", size=8)
         for key, ranges in self.nutrient_ranges.items():
             value = nutrients.get(key)
             if value is not None and value != '':
@@ -107,70 +94,73 @@ class SoilHealthCardGenerator:
                 range_text = f"<{ranges['low']} | {ranges['low']}-{ranges['medium']} | >{ranges['medium']}"
                 status = self.get_nutrient_status(key, value)
                 
-                # Set color based on status
-                color = self.get_status_color(status)
-                pdf.set_text_color(color[0], color[1], color[2])
+                # Color based on status
+                if 'LOW' in status:
+                    pdf.set_text_color(255, 0, 0)  # Red
+                elif 'HIGH' in status:
+                    pdf.set_text_color(0, 128, 0)  # Green
+                elif 'MEDIUM' in status:
+                    pdf.set_text_color(255, 165, 0)  # Orange
+                else:
+                    pdf.set_text_color(128, 128, 128)  # Grey
                 
-                pdf.cell(50, 6, txt=label, border=1)
-                pdf.cell(30, 6, txt=f"{value} {unit}", border=1)
-                pdf.cell(60, 6, txt=range_text, border=1)
-                pdf.cell(40, 6, txt=status, border=1)
-                pdf.ln()
+                pdf.cell(45, 6, label, 1, 0)
+                pdf.cell(25, 6, f"{value} {unit}", 1, 0)
+                pdf.cell(55, 6, range_text, 1, 0)
+                pdf.cell(35, 6, status, 1, 1)
                 
-                # Reset text color to black
+                # Reset color
                 pdf.set_text_color(0, 0, 0)
 
         pdf.ln(10)
 
         # Recommendations
-        pdf.set_font("Arial", 'B', 14)
-        pdf.cell(200, 10, txt="RECOMMENDATIONS", ln=True)
-        pdf.ln(5)
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(0, 8, "RECOMMENDATIONS", 0, 1)
+        pdf.ln(3)
         
         recommendations = self.generate_recommendations(nutrients, data.get('selected_crop', ''))
         
-        pdf.set_font("Arial", 'B', 10)
-        pdf.cell(63, 8, txt="SOIL AMENDMENT", border=1, align='C')
-        pdf.cell(63, 8, txt="FERTILIZER COMBO 1", border=1, align='C')
-        pdf.cell(64, 8, txt="FERTILIZER COMBO 2", border=1, align='C')
-        pdf.ln()
+        pdf.set_font("Arial", 'B', 9)
+        pdf.cell(60, 8, "SOIL AMENDMENT", 1, 0, 'C')
+        pdf.cell(60, 8, "FERTILIZER COMBO 1", 1, 0, 'C')
+        pdf.cell(60, 8, "FERTILIZER COMBO 2", 1, 1, 'C')
         
-        pdf.set_font("Arial", size=9)
-        # Handle multiline cells for recommendations
+        # Handle recommendations
+        pdf.set_font("Arial", size=8)
         max_lines = max(
             len(recommendations['soil_conditioner']),
             len(recommendations['fertilizer_combo_1']),
-            len(recommendations['fertilizer_combo_2'])
+            len(recommendations['fertilizer_combo_2']),
+            1
         )
         
-        for i in range(max(max_lines, 1)):
+        for i in range(max_lines):
             soil_text = recommendations['soil_conditioner'][i] if i < len(recommendations['soil_conditioner']) else ""
             fert1_text = recommendations['fertilizer_combo_1'][i] if i < len(recommendations['fertilizer_combo_1']) else ""
             fert2_text = recommendations['fertilizer_combo_2'][i] if i < len(recommendations['fertilizer_combo_2']) else ""
             
-            pdf.cell(63, 6, txt=soil_text, border=1)
-            pdf.cell(63, 6, txt=fert1_text, border=1)
-            pdf.cell(64, 6, txt=fert2_text, border=1)
-            pdf.ln()
+            pdf.cell(60, 6, soil_text, 1, 0)
+            pdf.cell(60, 6, fert1_text, 1, 0)
+            pdf.cell(60, 6, fert2_text, 1, 1)
 
         # Custom Remarks
         if custom_remarks:
             pdf.ln(10)
             pdf.set_font("Arial", 'B', 12)
-            pdf.cell(200, 8, txt="ADDITIONAL REMARKS", ln=True)
+            pdf.cell(0, 8, "ADDITIONAL REMARKS", 0, 1)
             pdf.set_font("Arial", size=10)
-            pdf.multi_cell(200, 6, txt=custom_remarks)
+            pdf.multi_cell(0, 6, custom_remarks)
 
         # Footer
         pdf.ln(10)
         pdf.set_font("Arial", 'I', 10)
-        pdf.cell(200, 6, txt="Developer: Achu Semy (SCA, Tseminyu, Nagaland)", ln=True, align='C')
+        pdf.cell(0, 6, "Developer: Achu Semy (SCA, Tseminyu, Nagaland)", 0, 1, 'C')
 
         # Save the PDF
         pdf.output(file_path)
 
     def generate_recommendations(self, nutrients, crop_type):
-        # Same logic as before - returns recommendations dict
         def get_nutrient_status_simple(value, nutrient_type):
             if value is None:
                 return 'unknown'
@@ -232,39 +222,45 @@ class SoilHealthCardGenerator:
         return recommendations
 
     def generate_bulk_cards(self, csv_path, output_dir):
-        """Generate bulk PDF cards from CSV file"""
+        """Generate bulk PDF cards from CSV file - using pure Python CSV instead of pandas"""
         try:
-            df = pd.read_csv(csv_path)
             count = 0
             errors = []
             
-            for index, row in df.iterrows():
-                try:
-                    # Convert row to data dict
-                    data = {}
-                    nutrients = {}
-                    
-                    # Map CSV columns to data fields
-                    for col in df.columns:
-                        if col.lower() in ['farmer_name', 'center_name', 'address', 'test_id', 
-                                         'testing_date', 'survey_no', 'farmer_address', 'selected_crop']:
-                            data[col.lower()] = str(row[col]) if pd.notna(row[col]) else ''
-                        elif col.lower() in self.nutrient_ranges:
-                            nutrients[col.lower()] = float(row[col]) if pd.notna(row[col]) else None
-                    
-                    # Generate filename
-                    farmer_name = data.get('farmer_name', f'farmer_{index}')
-                    safe_name = "".join(c for c in farmer_name if c.isalnum() or c in (' ', '_', '-')).strip()
-                    filename = f"soil_card_{safe_name}_{index}.pdf"
-                    filepath = os.path.join(output_dir, filename)
-                    
-                    # Generate PDF
-                    self.create_pdf_card(filepath, data, nutrients, "")
-                    count += 1
-                    
-                except Exception as e:
-                    errors.append(f"Row {index}: {str(e)}")
-                    
+            with open(csv_path, 'r', encoding='utf-8') as file:
+                csv_reader = csv.DictReader(file)
+                
+                for index, row in enumerate(csv_reader):
+                    try:
+                        # Convert row to data dict
+                        data = {}
+                        nutrients = {}
+                        
+                        # Map CSV columns to data fields
+                        for column, value in row.items():
+                            column_lower = column.lower().strip()
+                            if column_lower in ['farmer_name', 'center_name', 'address', 'test_id', 
+                                              'testing_date', 'survey_no', 'farmer_address', 'selected_crop']:
+                                data[column_lower] = str(value).strip() if value else ''
+                            elif column_lower in self.nutrient_ranges:
+                                try:
+                                    nutrients[column_lower] = float(value) if value else None
+                                except ValueError:
+                                    nutrients[column_lower] = None
+                        
+                        # Generate filename
+                        farmer_name = data.get('farmer_name', f'farmer_{index}')
+                        safe_name = "".join(c for c in farmer_name if c.isalnum() or c in (' ', '_', '-')).strip()
+                        filename = f"soil_card_{safe_name}_{index}.pdf"
+                        filepath = os.path.join(output_dir, filename)
+                        
+                        # Generate PDF
+                        self.create_pdf_card(filepath, data, nutrients, "")
+                        count += 1
+                        
+                    except Exception as e:
+                        errors.append(f"Row {index}: {str(e)}")
+                        
             return count, errors
             
         except Exception as e:
