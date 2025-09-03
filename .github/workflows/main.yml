@@ -10,6 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     timeout-minutes: 180
+
     env:
       ANDROIDSDK_ROOT: $HOME/.buildozer/android/platform/android-sdk
       ANDROID_NDK_HOME: $HOME/.buildozer/android/platform/android-ndk-r25b
@@ -64,12 +65,14 @@ jobs:
             libgdbm-dev libgdbm-compat-dev liblzma-dev libreadline-dev uuid-dev \
             libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev \
             zip unzip pkg-config \
-            autoconf automake libtool libtool-bin gettext gettext-base intltool \
+            autoconf automake libtool libtool-bin gettext gettext-base autopoint \
             gstreamer1.0-plugins-base gstreamer1.0-plugins-good
-      - name: Verify autotools / gettext tools
+
+      - name: Verify gettext tools installation
         run: |
-          echo "which autopoint: $(which autopoint || echo NOT_FOUND)"
-          echo "autoreconf: $(autoreconf --version || true)"
+          echo "which autopoint: $(which autopoint)"
+          echo "autopoint version: $(autopoint --version | head -1)"
+          echo "which gettext: $(which gettext)"
 
       - name: Setup Java 17 (required by Gradle)
         uses: actions/setup-java@v4
@@ -105,7 +108,7 @@ jobs:
       - name: Build with Buildozer (debug)
         id: buildozer
         run: |
-          # Adjust buildozer target (debug / release) as needed
+          # Accept all prompts automatically and build debug APK
           yes | buildozer -v android debug
 
       - name: Upload APK / AAB
@@ -116,40 +119,3 @@ jobs:
             bin/*.apk
             bin/*.aab
           retention-days: 3
-
-      - name: Reinstall autopoint explicitly
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y autopoint
-
-      - name: Debug PATH after autopoint installation
-        run: |
-          echo "PATH: $PATH"
-          which autopoint || echo "autopoint not found"
-          autopoint --version || echo "autopoint version check failed"
-
-      - name: Debug autopoint installation
-        run: |
-          echo "Listing /usr/bin and /usr/local/bin to check for autopoint"
-          ls -l /usr/bin | grep autopoint || echo "autopoint not found in /usr/bin"
-          ls -l /usr/local/bin | grep autopoint || echo "autopoint not found in /usr/local/bin"
-          echo "PATH: $PATH"
-
-      - name: Force reinstall autopoint
-        run: |
-          sudo apt-get update
-          sudo apt-get install --reinstall -y autopoint
-
-      - name: Verify autopoint installation (post-reinstall)
-        run: |
-          echo "PATH: $PATH"
-          which autopoint || echo "autopoint not found"
-          autopoint --version || echo "autopoint version check failed"
-
-      - name: Patch liblzma recipe to skip autoreconf
-        run: |
-          sed -i '/autoreconf/d' python-for-android/pythonforandroid/recipes/liblzma/__init__.py
-
-      - name: Clean Buildozer cache (ensure fresh build)
-        run: |
-          buildozer android clean
