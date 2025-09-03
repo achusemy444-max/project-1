@@ -47,6 +47,8 @@ android.debug_artifact = apk
 p4a.branch = master
 # p4a.bootstrap = sdl2   # default
 android.enable_androidx = True
+# Pointing Buildozer to the patched Python-for-Android recipes
+p4a.local_recipes = ./python-for-android/pythonforandroid/recipes
 
 [buildozer]
 log_level = 2
