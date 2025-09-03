@@ -117,6 +117,11 @@ jobs:
             bin/*.aab
           retention-days: 3
 
+      - name: Verify autopoint installation
+        run: |
+          which autopoint || echo "autopoint not found"
+          autopoint --version || echo "autopoint version check failed"
+
       - name: Clone patched Python-for-Android
         run: |
           git clone https://github.com/kivy/python-for-android.git
