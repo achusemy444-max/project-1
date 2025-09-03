@@ -122,8 +122,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y autopoint
 
-      - name: Verify autopoint installation (debugging step)
+      - name: Debug PATH after autopoint installation
         run: |
+          echo "PATH: $PATH"
+          which autopoint || echo "autopoint not found"
+          autopoint --version || echo "autopoint version check failed"
+
+      - name: Force reinstall autopoint
+        run: |
+          sudo apt-get update
+          sudo apt-get install --reinstall -y autopoint
+
+      - name: Verify autopoint installation (post-reinstall)
+        run: |
+          echo "PATH: $PATH"
           which autopoint || echo "autopoint not found"
           autopoint --version || echo "autopoint version check failed"
 
