@@ -73,6 +73,10 @@ jobs:
           echo "autopoint version: $(autopoint --version | head -1)"
           echo "which gettext: $(which gettext)"
 
+      - name: Clone python-for-android
+        run: |
+          git clone https://github.com/kivy/python-for-android python-for-android
+
       - name: Setup Java 17 (required by Gradle)
         uses: actions/setup-java@v4
         with:
@@ -107,12 +111,14 @@ jobs:
         run: |
           rm -rf ~/.buildozer
           rm -rf ./.buildozer
-          buildozer android clean
+          buildozer android clean \
+            --local-recipes=./python-for-android/pythonforandroid/recipes
 
       - name: Build with Buildozer (debug)
         id: buildozer
         run: |
-          yes | buildozer -v android debug
+          yes | buildozer -v android debug \
+            --local-recipes=./python-for-android/pythonforandroid/recipes
 
       - name: Upload APK / AAB
         uses: actions/upload-artifact@v4
