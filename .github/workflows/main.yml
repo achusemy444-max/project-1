@@ -117,22 +117,20 @@ jobs:
             bin/*.aab
           retention-days: 3
 
-      - name: Verify autopoint installation
+      - name: Reinstall autopoint explicitly
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y autopoint
+
+      - name: Verify autopoint installation (debugging step)
         run: |
           which autopoint || echo "autopoint not found"
           autopoint --version || echo "autopoint version check failed"
 
-      - name: Clone patched Python-for-Android
+      - name: Patch liblzma recipe to skip autoreconf
         run: |
-          git clone https://github.com/kivy/python-for-android.git
-          cd python-for-android
-          # Apply patch to skip autoreconf in liblzma recipe
-          sed -i '/autoreconf/d' pythonforandroid/recipes/liblzma/__init__.py
+          sed -i '/autoreconf/d' python-for-android/pythonforandroid/recipes/liblzma/__init__.py
 
-      - name: Verify patched liblzma recipe
-        run: |
-          grep -A 5 'class LiblzmaRecipe' python-for-android/pythonforandroid/recipes/liblzma/__init__.py || echo "Patch not applied"
-
-      - name: Clean Buildozer cache
+      - name: Clean Buildozer cache (ensure fresh build)
         run: |
           buildozer android clean
