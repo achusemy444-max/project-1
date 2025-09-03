@@ -116,3 +116,18 @@ jobs:
             bin/*.apk
             bin/*.aab
           retention-days: 3
+
+      - name: Clone patched Python-for-Android
+        run: |
+          git clone https://github.com/kivy/python-for-android.git
+          cd python-for-android
+          # Apply patch to skip autoreconf in liblzma recipe
+          sed -i '/autoreconf/d' pythonforandroid/recipes/liblzma/__init__.py
+
+      - name: Verify patched liblzma recipe
+        run: |
+          grep -A 5 'class LiblzmaRecipe' python-for-android/pythonforandroid/recipes/liblzma/__init__.py || echo "Patch not applied"
+
+      - name: Clean Buildozer cache
+        run: |
+          buildozer android clean
