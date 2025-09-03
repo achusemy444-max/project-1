@@ -64,7 +64,7 @@ jobs:
             libgdbm-dev libgdbm-compat-dev liblzma-dev libreadline-dev uuid-dev \
             libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev \
             zip unzip pkg-config \
-            autoconf automake libtool libtool-bin gettext intltool \
+            autoconf automake libtool libtool-bin gettext gettext-base intltool \
             gstreamer1.0-plugins-base gstreamer1.0-plugins-good
       - name: Verify autotools / gettext tools
         run: |
