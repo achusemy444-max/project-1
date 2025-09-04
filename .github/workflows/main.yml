@@ -1,5 +1,4 @@
 name: Android Build
-
 on:
   push:
     branches: [ main ]
@@ -73,9 +72,16 @@ jobs:
           echo "autopoint version: $(autopoint --version | head -1)"
           echo "which gettext: $(which gettext)"
 
-      - name: Clone python-for-android
+      - name: Ensure python-for-android checkout (idempotent)
         run: |
-          git clone https://github.com/kivy/python-for-android python-for-android
+          if [ -d python-for-android/.git ]; then
+            echo "Updating existing python-for-android"
+            git -C python-for-android fetch --depth=1 origin
+            git -C python-for-android reset --hard origin/master
+          else
+            rm -rf python-for-android || true
+            git clone --depth 1 https://github.com/kivy/python-for-android python-for-android
+          fi
 
       - name: Setup Java 17 (required by Gradle)
         uses: actions/setup-java@v4
@@ -107,19 +113,10 @@ jobs:
           uname -a
           java -version || true
 
-      - name: Clear previous Buildozer cache
-        run: |
-          rm -rf ~/.buildozer
-          rm -rf ./.buildozer
-
-      - name: Clone python-for-android again
-        run: git clone https://github.com/kivy/python-for-android python-for-android
-
       - name: Build with Buildozer (debug)
         run: |
-          yes | buildozer -v android debug \
-            --local-recipes=./python-for-android/pythonforandroid/recipes
-
+          RECIPES_ABS="$(pwd)/python-for-android/pythonforandroid/recipes"
+          yes | buildozer -v android debug --local-recipes="$RECIPES_ABS"
 
       - name: Upload APK / AAB
         uses: actions/upload-artifact@v4
